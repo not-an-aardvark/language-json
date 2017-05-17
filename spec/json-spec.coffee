@@ -106,3 +106,47 @@ describe "JSON grammar", ->
     expect(tokens[15]).toEqual value: ',', scopes: [valueScopes..., 'invalid.illegal.trailing-dictionary-separator.json']
     expect(tokens[16]).toEqual value: ' ', scopes: baseScopes
     expect(tokens[17]).toEqual value: '}', scopes: [baseScopes..., 'punctuation.definition.dictionary.end.json']
+
+  it "identifies trailing commas in arrays", ->
+    baseScopes = ['source.json', 'meta.structure.array.json']
+
+    {tokens} = grammar.tokenizeLine('[1,]')
+    expect(tokens[0]).toEqual value: '[', scopes: [baseScopes..., 'punctuation.definition.array.begin.json']
+    expect(tokens[1]).toEqual value: '1', scopes: [baseScopes..., 'constant.numeric.json']
+    expect(tokens[2]).toEqual value: ',', scopes: [baseScopes..., 'invalid.illegal.trailing-array-separator.json']
+    expect(tokens[3]).toEqual value: ']', scopes: [baseScopes..., 'punctuation.definition.array.end.json']
+
+  it "identifies trailing object commas over multiple lines", ->
+    baseScopes = ['source.json', 'meta.structure.dictionary.json']
+    keyScopes = [baseScopes..., 'meta.structure.dictionary.key.json', 'string.quoted.double.json']
+    keyBeginScopes = [keyScopes..., 'punctuation.definition.string.begin.json']
+    keyEndScopes = [keyScopes..., 'punctuation.definition.string.end.json']
+    valueScopes = [baseScopes..., 'meta.structure.dictionary.value.json']
+    keyValueSeparatorScopes = [valueScopes..., 'punctuation.separator.dictionary.key-value.json']
+
+    [firstLineTokens, secondLineTokens] = grammar.tokenizeLines('{"a": 1,\n}')
+    expect(firstLineTokens.length).toEqual 8
+    expect(firstLineTokens[0]).toEqual value: '{', scopes: [baseScopes..., 'punctuation.definition.dictionary.begin.json']
+    expect(firstLineTokens[1]).toEqual value: '"', scopes: keyBeginScopes
+    expect(firstLineTokens[2]).toEqual value: 'a', scopes: keyScopes
+    expect(firstLineTokens[3]).toEqual value: '"', scopes: keyEndScopes
+    expect(firstLineTokens[4]).toEqual value: ':', scopes: [valueScopes..., 'punctuation.separator.dictionary.key-value.json']
+    expect(firstLineTokens[5]).toEqual value: ' ', scopes: valueScopes
+    expect(firstLineTokens[6]).toEqual value: '1', scopes: [valueScopes..., 'constant.numeric.json']
+    expect(firstLineTokens[7]).toEqual value: ',', scopes: [valueScopes..., 'invalid.illegal.trailing-dictionary-separator.json']
+
+    expect(secondLineTokens.length).toEqual 1
+    expect(secondLineTokens[0]).toEqual value: '}', scopes: [baseScopes..., 'punctuation.definition.dictionary.end.json']
+
+
+  it "identifies trailing array commas over multiple lines", ->
+    baseScopes = ['source.json', 'meta.structure.array.json']
+
+    [firstLineTokens, secondLineTokens] = grammar.tokenizeLines('[1,\n]')
+    expect(firstLineTokens.length).toEqual 3
+    expect(firstLineTokens[0]).toEqual value: '[', scopes: [baseScopes..., 'punctuation.definition.array.begin.json']
+    expect(firstLineTokens[1]).toEqual value: '1', scopes: [baseScopes..., 'constant.numeric.json']
+    expect(firstLineTokens[2]).toEqual value: ',', scopes: [baseScopes..., 'invalid.illegal.trailing-array-separator.json']
+
+    expect(secondLineTokens.length).toEqual 1
+    expect(secondLineTokens[0]).toEqual value: ']', scopes: [baseScopes..., 'punctuation.definition.array.end.json']
